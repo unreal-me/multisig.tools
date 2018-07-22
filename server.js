@@ -16,12 +16,12 @@ const router = new Router()
 const server = socketInit(app);
 
 
-// app.use((ctx, next) => {
-//     return next().catch(err => {
-//         ctx.status = err.status || 500
-//         ctx.body = err
-//     })
-// })
+app.use((ctx, next) => {
+    return next().catch(err => {
+        ctx.status = err.status || 500
+        ctx.body = err
+    })
+})
 
 if (process.env.NODE_ENV === 'development') {
     app.use(Logger())
@@ -38,7 +38,7 @@ app.use(bodyParser({
     jsonLimit: '2mb',
     strict: true,
     onerror: function (err, ctx) {
-        ctx.throw("body parse error", 422)
+        ctx.throw(422, "body parse error")
     }
 }))
 
@@ -47,6 +47,6 @@ app.use(router.routes())
 app.use(router.allowedMethods())
 
 mongoose.connect(process.env.MONGODB_URL, { useNewUrlParser: true })
-// { "signer.C": { $exists: true, $ne: null } }
+
 module.exports = server
 

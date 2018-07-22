@@ -1,3 +1,4 @@
 module.exports = (router) => {
-    router.use('/hash', require('./records'))
+    router.use('/api', require('./records')),
+    router.use('', require('./pages'))
 }
