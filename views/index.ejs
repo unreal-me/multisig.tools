@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        <%= title %>
+    </title>
+</head>
+
+<body>
+    <h1>
+        <%= title %>
+    </h1>
+    <p>
+        <%= title %>
+    </p>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
+    <script>
+        hash_tmp = window.location.href.split('/')
+        hash = hash_tmp[hash_tmp.length - 1]
+        var socket = io();
+        socket.once('connect', function () {
+            socket.emit('join', hash);
+        })
+        socket.on('message', function (msg) {
+            console.log(msg);
+        });
+
+    </script>
+</body>
+
+</html>
