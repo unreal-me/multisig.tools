@@ -1,6 +1,6 @@
 const http = require('http')
 const socket_io = require('socket.io')
-// const socket = require('socket.io')
+
 function socketInit(app) {
     const server = http.createServer(app.callback());
     io = socket_io(server);
@@ -22,8 +22,8 @@ function socketInit(app) {
     return server;
 }
 
-async function sendMessageByHash(hash) {
-    io.to(hash).emit('message', hash);
+async function sendMessageByHash(hash, record) {
+    io.to(hash).emit('message', record);
 }
 
 module.exports = {

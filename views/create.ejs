@@ -1,1 +1,176 @@
-create
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>New Payment - multisig.tools</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css">
+    <script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js"></script>
+    <style>
+        .paymant-form {
+            padding-top: 20px;
+            padding-left: 5px;
+            padding-right: 5px;
+            padding-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <section class="hero is-primary">
+            <div class="hero-body">
+                <div class="container">
+                    <h1 class="title">
+                        NEW PAYMENT
+                    </h1>
+                    <h2 class="subtitle">
+                        multisig.tools
+                    </h2>
+                </div>
+            </div>
+            <div class="hero-foot">
+                <nav class="tabs is-boxed is-fullwidth">
+                    <div class="container">
+                        <ul>
+                            <li>
+                                <a href="/">SIGNATURE LIST</a>
+                            </li>
+                            <li class="is-active">
+                                <a href="create">NEW PAYMENT</a>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </section>
+        <form class="paymant-form">
+            <div class="field">
+                <label class="label">Your account</label>
+                <div class="control">
+                    <input id="your-address" class="input is-success" type="text" placeholder="Loading..." disabled>
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">Source account</label>
+                <div class="control">
+                    <input id="source-account" class="input is-success" type="text" value="GCBGRA6HGBLNWFY5WCDRIMAUM5V5GVUJZLTF6ZYKF2VOFLCGOSCMSMH5"
+                        placeholder="GAS2D25QE5XANGBTG6ENN6MM2GO572A6S5SHRNFLF4TNBP5TDVJZKOES" required>
+                </div>
+                <p class="help is-success">The source account for the payment.</p>
+            </div>
+
+            <div class="field">
+                <label class="label">Destination</label>
+                <div class="control">
+                    <input id="destination" class="input is-success" type="text" value="GCTIWTV55JSVDMYPIEJA6CQVG6Y5XCSWI3H4LQKOD3OU2775X6LMFTLO"
+                        placeholder="GBXI6WDVX5O5765FG3FLWVQCWXTPYCN775WMDIRJA4ESQPUSTAN6X5SJ" required>
+                </div>
+                <p class="help is-success">The destination account ID.</p>
+            </div>
+            <div class="field">
+                <label class="label">Asset Code</label>
+                <div class="control">
+                    <input id="asset-code" class="input is-success" type="text" placeholder="BTC">
+                </div>
+                <p class="help is-success">If it is a native asset, please leave it blank.</p>
+            </div>
+            <div class="field">
+                <label class="label">Asset Issuer</label>
+                <div class="control">
+                    <input id="asset-issuer" class="input is-success" type="text" placeholder="GATEMHCCKCY67ZUCKTROYN24ZYT5GK4EQZ65JJLDHKHRUZI3EUEKMTCH">
+                </div>
+                <p class="help is-success">If it is a native asset, please leave it blank.</p>
+            </div>
+
+            <div class="field">
+                <label class="label">Amount</label>
+                <div class="control">
+                    <input id="amount" class="input is-success" type="number" placeholder="1.5" step="0.0000001" required>
+                </div>
+                <p class="help is-success">The amount to send.</p>
+            </div>
+
+            <div class="field">
+                <label class="label">Message(optional)</label>
+                <div class="control">
+                    <textarea id="message" class="textarea is-success" placeholder="Hello, world!"></textarea>
+                </div>
+            </div>
+            <!-- <button id="submit" class="button is-primary is-fullwidth is-loading" disabled>Submit</button> -->
+            <button id="submit" class="button is-primary is-fullwidth">Submit</button>
+
+        </form>
+    </div>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+        $(function () {
+            (function loadFFW() {
+                let interval = setInterval(function () {
+                    if (window.FFW) {
+                        $("#your-address").val(window.FFW.address)
+                        sign();
+                        clearInterval(interval);
+                    }
+                }, 100);
+            })();
+
+            $("#submit").click(function () {
+                $("#submit").addClass('is-loading')
+
+                let your_address = window.FFW.address
+                let source_account = $("#source-account").val()
+                let destination = $("#destination").val()
+                let asset_code = $("#asset-code").val()
+                let asset_issuer = $("#asset-issuer").val()
+                let amount = $("#amount").val()
+                let message = $("#message").val()
+                let data = {
+                    sourcePublicKey: your_address,
+                    sourcePaymentPublicKey: source_account,
+                    receiverPublicKey: destination,
+                    assetCode: asset_code,
+                    assetIssuer: asset_issuer,
+                    amount: amount,
+                    message: message
+                }
+                console.log(data)
+                $("form").submit(() => {
+
+                    let signature_data = JSON.stringify(data, Object.keys(data).sort())
+                    window.FFW.sign(signature_data, response => {
+                        if (response.code === 'fail') {
+                            alert('sign failed')
+                        } else {
+                            fetch("/api/create",
+                                {
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json',
+                                        'x-stellar-timestamp': (new Date().getTime()).toString(),
+                                        'x-stellar-address': window.FFW.address,
+                                        'x-stellar-signature': response.data
+                                    },
+                                    method: "POST",
+                                    body: JSON.stringify(data)
+                                })
+                                .then(res => { return res.json() })
+                                .then(res => {
+                                    if (res.hash) {
+                                        alert(res.hash)
+                                    } else {
+                                        alert(res.message)
+                                    }
+                                })
+                                .catch(res => { alert(res) })
+                        }
+                    })
+                    return false;
+                });
+            });
+        })
+    </script>
+</body>
+
+</html>

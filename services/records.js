@@ -18,10 +18,10 @@ async function vaildateSignature(ctx) {
         ctx.throw(401, "Unauthorized")
     }
 
-    let dataJson = { 'x-stellar-address': address, 'x-stellar-signature': signature, 'x-stellar-timestamp': timestamp }
+    let dataJson = { 'x-stellar-address': address, 'x-stellar-timestamp': timestamp }
     // TODO: OPTIONS
     if (ctx.request.method !== 'GET') {
-        dataJson = { ...dataJson, ...ctx.request.body }
+        dataJson = ctx.request.body
     }
 
     signData = await JSON.stringify(dataJson, Object.keys(dataJson).sort());
@@ -31,7 +31,6 @@ async function vaildateSignature(ctx) {
     } catch (err) {
         // console.log(err)
     }
-
     if (valid === false) {
         ctx.throw(401, "Unauthorized")
     }
@@ -54,9 +53,11 @@ async function fetchAccount(address) {
     return resp
 }
 
-async function generateXdr(sourcePublicKey, sourcePaymentPublicKey, receiverPublicKey, assetCode, assetIssuer = undefined, amount) {
-    let asset = new stellarSdk.Asset.native()
-    if (assetIssuer) {
+async function generateXdr(sourcePublicKey, sourcePaymentPublicKey, receiverPublicKey, assetCode, assetIssuer, amount) {
+    let asset = null
+    if (assetCode === '' || assetIssuer === '') {
+        asset = new stellarSdk.Asset.native()
+    } else {
         asset = new stellarSdk.Asset(assetCode, assetIssuer)
     }
     // TODO: account check
@@ -85,12 +86,12 @@ async function submitXdr(tx) {
     return axios.post(
         serverURL + '/transactions',
         `tx=${tx}`
-      )
+    )
 }
 
 async function sumWeight(signers) {
     signers = Object.values(signers)
-    weight = await signers.filter((signer) => signer.signed === true).reduce((weight, signer) => { return weight += signer.weight}, 0)
+    weight = await signers.filter((signer) => signer.signed === true).reduce((weight, signer) => { return weight += signer.weight }, 0)
     return weight
 }
 module.exports = {

@@ -1,1 +1,234 @@
-detail
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>New Payment - multisig.tools</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css">
+    <script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js"></script>
+    <style>
+        .paymant-form {
+            padding-top: 20px;
+            padding-left: 5px;
+            padding-right: 5px;
+            padding-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <section class="hero is-primary">
+            <div class="hero-body">
+                <div class="container">
+                    <h1 class="title">
+                        DETAIL
+                    </h1>
+                    <h2 class="subtitle">
+                        multisig.tools
+                    </h2>
+                </div>
+            </div>
+            <div class="hero-foot">
+                <nav class="tabs is-boxed is-fullwidth">
+                    <div class="container">
+                        <ul>
+                            <li>
+                                <a>SIGNATURE LIST</a>
+                            </li>
+                            <li>
+                                <a>NEW PAYMENT</a>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </section>
+        <form class="paymant-form">
+            <div class="field">
+                <label class="label">Hash</label>
+                <div class="control">
+                    <input id="hash" class="input is-success" type="text" placeholder="Loading..." disabled>
+                </div>
+                <p class="help is-success">The payment initiated by the account</p>
+            </div>
+            <div class="field">
+                <label class="label">Payment Creator</label>
+                <div class="control">
+                    <input id="your-address" class="input is-success" type="text" placeholder="Loading..." disabled>
+                </div>
+                <p class="help is-success">The payment initiated by the account</p>
+            </div>
+            <div class="field">
+                <label class="label">Source account</label>
+                <div class="control">
+                    <input id="source-account" class="input is-success" type="text" placeholder="Loading..." disabled>
+                </div>
+                <p class="help is-success">The source account for the payment.</p>
+            </div>
+
+            <div class="field">
+                <label class="label">Destination</label>
+                <div class="control">
+                    <input id="destination" class="input is-success" type="text" placeholder="Loading..." disabled>
+                </div>
+                <p class="help is-success">The destination account ID.</p>
+            </div>
+            <div class="field">
+                <label class="label">Asset Code</label>
+                <div class="control">
+                    <input id="asset-code" class="input is-success" type="text" placeholder="Loading..." disabled>
+                </div>
+                <p class="help is-success">If it is a native asset, please leave it blank.</p>
+            </div>
+            <div class="field">
+                <label class="label">Asset Issuer</label>
+                <div class="control">
+                    <input id="asset-issuer" class="input is-success" type="text" placeholder="Loading..." disabled>
+                </div>
+                <p class="help is-success">If it is a native asset, please leave it blank.</p>
+            </div>
+
+            <div class="field">
+                <label class="label">Amount</label>
+                <div class="control">
+                    <input id="amount" class="input is-success" type="number" placeholder="Loading..." disabled>
+                </div>
+                <p class="help is-success">The amount to send.</p>
+            </div>
+
+            <div class="field">
+                <label class="label">Message(optional)</label>
+                <div class="control">
+                    <textarea id="message" class="textarea is-success" placeholder="Loading..." disabled></textarea>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">XDR(
+                    <a id="xdr-viewer">XDR Viewer</a>)</label>
+                <div class="control">
+                    <textarea id="xdr" class="textarea is-success" placeholder="Loading..." disabled></textarea>
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">Time</label>
+                <div class="control">
+                    <input id="time" class="input is-success" type="text" placeholder="Loading..." disabled>
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">Status</label>
+                <div class="control">
+                    <input id="status" class="input is-success" type="text" placeholder="Loading..." disabled>
+                </div>
+            </div>
+            <button id="sign" class="button is-primary is-fullwidth">Sign the payment</button>
+        </form>
+    </div>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/socket.io/2.1.1/socket.io.js"></script>
+    <script>
+        $(function () {
+            (function loadFFW() {
+                let interval = setInterval(function () {
+                    if (window.FFW) {
+                        fetchData();
+                        websocketData();
+                        clearInterval(interval);
+                    }
+                }, 100);
+            })();
+            function websocketData() {
+                hash_tmp = window.location.href.split('/')
+                hash = hash_tmp[hash_tmp.length - 1].slice(0, 64)
+                var socket = io();
+                socket.once('connect', function () {
+                    socket.emit('join', hash);
+                })
+                socket.on('message', function (res) {
+                    handleData(res)
+                });
+            }
+            function handleData(res) {
+                $("#hash").val(res.hash)
+                $("#time").val(res.createdAt)
+                $("#your-address").val(res.detail.sourcePublicKey)
+                $("#source-account").val(res.detail.sourcePaymentPublicKey)
+                $("#destination").val(res.detail.receiverPublicKey)
+                let assetCode = res.detail.assetCode
+                let assetIssuer = res.detail.assetIssuer
+                if (assetCode == '') {
+                    assetCode = "XLM"
+                    assetIssuer = "stellar.org"
+                }
+                $("#asset-code").val(assetCode)
+                $("#asset-issuer").val(assetIssuer)
+                $("#amount").val(res.detail.amount)
+                $("#message").val(res.detail.message)
+                const xdr = res.xdr
+                $("#xdr").val(xdr)
+                $("#xdr-viewer").prop("href", `https://www.stellar.org/laboratory/#xdr-viewer?input=${encodeURIComponent(xdr)}&type=TransactionEnvelope&network=public`)
+                const status_code = res.status
+                let status = ''
+                switch (status_code) {
+                    case 0:
+                        const medThreshold = res.medThreshold
+                        const sumWeight = res.sumWeight
+                        status = `Processing. Need ${medThreshold} weights, got ${sumWeight}.`
+                        break;
+                    case 1:
+                        status = 'Success'
+                        break;
+                    case 2:
+                        status = 'Failed'
+                        break;
+                }
+                $("#status").val(status)
+                if (status_code != 0) {
+                    $("#sign").hide()
+                }
+                if (res.signers[window.FFW.address].signed) {
+                    $('#sign').prop("disabled", true).html('Signed');
+                }
+
+            }
+            function fetchData() {
+                let data = {
+                    'x-stellar-timestamp': (new Date().getTime()).toString(),
+                    'x-stellar-address': window.FFW.address,
+                }
+                let signature_data = JSON.stringify(data, Object.keys(data).sort())
+                window.FFW.sign(signature_data, response => {
+                    if (response.code === 'fail') {
+                        alert('sign failed')
+                    } else {
+                        fetch("/api/detail/1dad017dd8f8a1aa37863e027d219c9704933bd1470513c4ed41aefab001b8c2",
+                            {
+                                headers: {
+                                    ...data,
+                                    'x-stellar-signature': response.data
+                                },
+                                method: "GET",
+                            })
+                            .then(res => {
+                                return res.json()
+                            })
+                            .then(res => {
+                                if (res.hash) {
+                                    handleData(res)
+
+                                }
+                            })
+                            .catch(res => { alert(res) })
+                    }
+                })
+
+            }
+
+        })
+    </script>
+</body>
+
+</html>

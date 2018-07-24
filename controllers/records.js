@@ -4,50 +4,62 @@ const Records = require('../models/records')
 
 async function detail(ctx) {
     // await services.vaildateSignature(ctx)
-    let hash = ctx.params.hash
-    let record = await Records.findOne({ hash })
+    const hash = ctx.params.hash
+    const record = await Records.findOne({ hash })
+    const sumWeight = await services.sumWeight(record["_doc"].signers)
     if (record) {
-        ctx.body = record
+        ctx.body = {
+            ...record["_doc"],
+            sumWeight
+        }
     } else {
         ctx.throw(404, "Not Found")
     }
+
 }
 
 async function create(ctx) {
     // TODO: error handler
-    // await services.vaildateSignature(ctx)
-    let address = ctx.request.headers['x-stellar-address']
-    let account = await services.fetchAccount(ctx.request.body.sourcePaymentPublicKey)
+    await services.vaildateSignature(ctx)
+    const address = ctx.request.headers['x-stellar-address']
+    const account = await services.fetchAccount(ctx.request.body.sourcePaymentPublicKey)
     if (!account.signers[address]) {
         // TODO: Need to do this?
         ctx.throw(400, "Your address is not in the signers list.")
     }
-    let xdr = await services.generateXdr('GD46CTP5BW3V5F5TG7HIZT43ZP55CD34QM4SISJZFXPZ2BCVY6DZ6UVO', 'GD46CTP5BW3V5F5TG7HIZT43ZP55CD34QM4SISJZFXPZ2BCVY6DZ6UVO', 'GAIRISXKPLOWZBMFRPU5XRGUUX3VMA3ZEWKBM5MSNRU3CHV6P4PYZ74D', 'ETH', 'GAIRISXKPLOWZBMFRPU5XRGUUX3VMA3ZEWKBM5MSNRU3CHV6P4PYZ74D', '103')
-    let record = { ...xdr, ...account, ...{ detail: ctx.request.body } }
-    // console.log(record)
+    const { sourcePublicKey, sourcePaymentPublicKey, receiverPublicKey, assetCode, assetIssuer, amount } = { ...ctx.request.body }
+    const xdr = await services.generateXdr(sourcePublicKey, sourcePaymentPublicKey, receiverPublicKey, assetCode, assetIssuer, amount)
+    const record = { ...xdr, ...account, ...{ detail: ctx.request.body } }
     const newRecord = new Records(record)
-    const savedRecord = await newRecord.save()
-    ctx.body = savedRecord
+    try {
+        const savedRecord = await newRecord.save()
+        ctx.body = savedRecord
+    } catch (e) {
+        // TODO: Return hash
+        ctx.throw(400, "The payment already exists.")
+    }
 }
 
 async function list(ctx) {
+    await socket.sendMessageByHash("1dad017dd8f8a1aa37863e027d219c9704933bd1470513c4ed41aefab001b8c2", 0, 10)
+
     // await services.vaildateSignature(ctx)
-    let address = ctx.request.headers['x-stellar-address']
-    let records = await Records.find({ [`signers.${address}`]: { $exists: true } }).sort({ '_id': -1 })
+    const address = ctx.request.headers['x-stellar-address']
+    const records = await Records.find({ [`signers.${address}`]: { $exists: true } }).sort({ '_id': -1 })
     ctx.body = records
 }
 
 async function sign(ctx) {
     // await services.vaildateSignature(ctx)
-    let address = ctx.request.headers['x-stellar-address']
-    let { hash, xdr } = ctx.request.body
-    let record = await Records.findOne({ hash })
+    const address = ctx.request.headers['x-stellar-address']
+    const { hash, xdr } = ctx.request.body
+    const record = await Records.findOne({ hash })
 
     if (record.signers[address].signed === true) {
         ctx.throw(400, "You have already signed it.")
     }
-    
-    let validHash = await services.equalHash(xdr, record.hash)
+
+    const validHash = await services.equalHash(xdr, record.hash)
     if (!validHash) {
         ctx.throw(400, "Illegal xdr")
     }
@@ -55,7 +67,7 @@ async function sign(ctx) {
     record.xdr = xdr
     record.signers[address].signed = true
     record.save()
-    let sumWeight = await services.sumWeight(record.signers)
+    const sumWeight = await services.sumWeight(record.signers)
     if (sumWeight >= record.medThreshold) {
         // submit to xdr
         // TODO: reason
@@ -68,7 +80,7 @@ async function sign(ctx) {
             console.log(err)
             record.status = 2
         }
-        record.save()       
+        record.save()
     }
     // await socket.sendMessageByHash(hash)
     ctx.body = record
