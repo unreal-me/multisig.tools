@@ -98,7 +98,6 @@
                     <textarea id="message" class="textarea is-success" placeholder="Hello, world!"></textarea>
                 </div>
             </div>
-            <!-- <button id="submit" class="button is-primary is-fullwidth is-loading" disabled>Submit</button> -->
             <button id="submit" class="button is-primary is-fullwidth">Submit</button>
 
         </form>
@@ -143,7 +142,7 @@
                         if (response.code === 'fail') {
                             alert('sign failed')
                         } else {
-                            fetch("/api/create",
+                            fetch("/api/sign",
                                 {
                                     headers: {
                                         'Accept': 'application/json',

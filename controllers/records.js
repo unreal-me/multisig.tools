@@ -1,4 +1,4 @@
-const socket = require('../utils/socket')
+const socket = require('../utils/socket') 
 const services = require('../services/records')
 const Records = require('../models/records')
 
@@ -41,8 +41,6 @@ async function create(ctx) {
 }
 
 async function list(ctx) {
-    await socket.sendMessageByHash("1dad017dd8f8a1aa37863e027d219c9704933bd1470513c4ed41aefab001b8c2", 0, 10)
-
     // await services.vaildateSignature(ctx)
     const address = ctx.request.headers['x-stellar-address']
     const records = await Records.find({ [`signers.${address}`]: { $exists: true } }).sort({ '_id': -1 })
@@ -63,10 +61,12 @@ async function sign(ctx) {
     if (!validHash) {
         ctx.throw(400, "Illegal xdr")
     }
-
+    console.log(record.signers[address].signed)
     record.xdr = xdr
     record.signers[address].signed = true
+    record.markModified('signers')
     record.save()
+    console.log(record.signers[address].signed)
     const sumWeight = await services.sumWeight(record.signers)
     if (sumWeight >= record.medThreshold) {
         // submit to xdr
@@ -83,7 +83,12 @@ async function sign(ctx) {
         record.save()
     }
     // await socket.sendMessageByHash(hash)
+    console.log(record)
     ctx.body = record
+    await socket.sendMessageByHash(hash, {
+        ...record["_doc"],
+        sumWeight
+    })
 }
 
 module.exports = {

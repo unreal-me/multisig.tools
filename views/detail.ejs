@@ -224,6 +224,53 @@
                             .catch(res => { alert(res) })
                     }
                 })
+                $("#sign").click(function () {
+                    $("#sign").addClass('is-loading')
+                    window.FFW.signXDR($("#xdr").val(), "签名XDR", function (response) {
+                        if (response.code === 'fail') {
+                            alert('Sign failed!' + response.message)
+                        } else {
+                            const newXdr = response.data
+                            const data = {
+                                xdr: newXdr,
+                                hash: $("#hash").val()
+                            }
+                            let signature_data = JSON.stringify(data, Object.keys(data).sort())
+                            window.FFW.sign(signature_data, response => {
+                                if (response.code === 'fail') {
+                                    alert('sign failed')
+                                } else {
+                                    fetch("/api/sign",
+                                        {
+                                            headers: {
+                                                'Accept': 'application/json',
+                                                'Content-Type': 'application/json',
+                                                'x-stellar-timestamp': (new Date().getTime()).toString(),
+                                                'x-stellar-address': window.FFW.address,
+                                                'x-stellar-signature': response.data
+                                            },
+                                            method: "POST",
+                                            body: JSON.stringify(data)
+                                        })
+                                        .then(res => { return res.json() })
+                                        .then(res => {
+                                            if (res.hash) {
+                                                $("#sign").removeClass('is-loading')
+                                                $('#sign').prop("disabled", true).html('Signed');
+                                            } else {
+                                                alert(res.message)
+                                            }
+                                        })
+                                        .catch(res => { alert(res) })
+                                }
+                            }
+
+                            )
+                        }
+                    })
+
+                    return false
+                })
 
             }
 
