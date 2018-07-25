@@ -5,8 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>New Payment - multisig.tools</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css">
-    <script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js"></script>
+    <link href="https://cdn.bootcss.com/bulma/0.7.1/css/bulma.min.css" rel="stylesheet">
     <style>
         .word-break {
             word-break: break-all;
@@ -32,10 +31,10 @@
                 <nav class="tabs is-boxed is-fullwidth">
                     <div class="container">
                         <ul>
-                            <li>
+                            <li class="is-active">
                                 <a href="/">SIGNATURE LIST</a>
                             </li>
-                            <li class="is-active">
+                            <li>
                                 <a href="create">NEW PAYMENT</a>
                             </li>
                         </ul>
@@ -43,42 +42,80 @@
                 </nav>
             </div>
         </section>
-        <section>
-            <div class="card">
-                <div class="card-content">
-                    <div class="content word-break">
-                        hash: d09f0778512469366b7aab9820c8bd859ad52f58778ac8129b1a2bdb20c27937
-                        <br> Payment: Pay 10 XLM to GAZEX2USUBMMWFRZFS77VDJYXUFLXI4ZGFPWX6TBNZCSTEQWNLFZMXFF
-                        <br> Status: 7 / 10
-                        <br>
-                        <button class="button is-primary">Detail</button>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-content">
-                    <div class="content word-break">
-                        hash: d09f0778512469366b7aab9820c8bd859ad52f58778ac8129b1a2bdb20c27937
-                        <br> Payment: Pay 10 XLM to GAZEX2USUBMMWFRZFS77VDJYXUFLXI4ZGFPWX6TBNZCSTEQWNLFZMXFF
-                        <br> Status: 7 / 10
-                        <br>
-                        <button class="button is-primary">Detail</button>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-content">
-                    <div class="content word-break">
-                        hash: d09f0778512469366b7aab9820c8bd859ad52f58778ac8129b1a2bdb20c27937
-                        <br> Payment: Pay 10 XLM to GAZEX2USUBMMWFRZFS77VDJYXUFLXI4ZGFPWX6TBNZCSTEQWNLFZMXFF
-                        <br> Status: 7 / 10
-                        <br>
-                        <button class="button is-primary">Detail</button>
-                    </div>
-                </div>
-            </div>
+        <section id='hash-list'>
+            Loading...
         </section>
     </div>
+
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/socket.io/2.1.1/socket.io.js"></script>
+    <script>
+        $(function () {
+            (function loadFFW() {
+                let interval = setInterval(function () {
+                    if (window.FFW) {
+                        fetchData();
+                        clearInterval(interval);
+                    }
+                }, 100);
+            })();
+        })
+        function fetchData() {
+            let data = {
+                'x-stellar-timestamp': (new Date().getTime()).toString(),
+                'x-stellar-address': window.FFW.address,
+            }
+            const signature_data = JSON.stringify(data, Object.keys(data).sort())
+            window.FFW.sign(signature_data, response => {
+                if (response.code === 'fail') {
+                    alert('sign failed')
+                } else {
+                    fetch("/api/list",
+                        {
+                            headers: {
+                                ...data,
+                                'x-stellar-signature': response.data
+                            },
+                            method: "GET",
+                        })
+                        .then(res => {
+                            return res.json()
+                        })
+                        .then(res => {
+                            handleData(res)
+                        })
+                        .catch(res => { alert(res) })
+                }
+            })
+        }
+        function handleData(res) {
+            $("#hash-list").empty()
+            res.forEach(record => {
+                $("#hash-list").append(
+                    cardTemplate(record.hash, record.detail.sourcePaymentPublicKey, record.detail.assetCode, record.detail.receiverPublicKey, record.detail.amount)
+                )
+
+            });
+        }
+        function cardTemplate(hash, source, assetCode, destination, amount) {
+            if (assetCode == "") {
+                assetCode = "XLM"
+            }
+            return `
+            <div class="card">
+                <div class="card-content">
+                    <div class="content word-break">
+                        Hash: ${hash}<br>
+                        Info: ${source} Pay <span class="has-text-info">${amount} ${assetCode}</span> to ${destination}<br>
+                        <a href="/detail/${hash}" class="button is-primary">Detail</a>
+                    </div>
+                </div>
+            </div>
+            `
+        }
+
+    </script>
+
 </body>
 
 </html>

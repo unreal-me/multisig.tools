@@ -5,8 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>New Payment - multisig.tools</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css">
-    <script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js"></script>
+    <link href="https://cdn.bootcss.com/bulma/0.7.1/css/bulma.min.css" rel="stylesheet">
     <style>
         .paymant-form {
             padding-top: 20px;
@@ -106,8 +105,7 @@
             </div>
 
             <div class="field">
-                <label class="label">XDR(
-                    <a id="xdr-viewer">XDR Viewer</a>)</label>
+                <label class="label">XDR(<a id="xdr-viewer">XDR Viewer</a>)</label>
                 <div class="control">
                     <textarea id="xdr" class="textarea is-success" placeholder="Loading..." disabled></textarea>
                 </div>
@@ -204,7 +202,7 @@
                     if (response.code === 'fail') {
                         alert('sign failed')
                     } else {
-                        fetch("/api/detail/1dad017dd8f8a1aa37863e027d219c9704933bd1470513c4ed41aefab001b8c2",
+                        fetch("/api/detail/" + hash,
                             {
                                 headers: {
                                     ...data,
@@ -226,7 +224,7 @@
                 })
                 $("#sign").click(function () {
                     $("#sign").addClass('is-loading')
-                    window.FFW.signXDR($("#xdr").val(), "签名XDR", function (response) {
+                    window.FFW.signXDR($("#xdr").val(), "Sign XDR", function (response) {
                         if (response.code === 'fail') {
                             alert('Sign failed!' + response.message)
                         } else {

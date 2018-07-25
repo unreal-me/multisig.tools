@@ -3,7 +3,7 @@ const services = require('../services/records')
 const Records = require('../models/records')
 
 async function detail(ctx) {
-    // await services.vaildateSignature(ctx)
+    await services.vaildateSignature(ctx)
     const hash = ctx.params.hash
     const record = await Records.findOne({ hash })
     const sumWeight = await services.sumWeight(record["_doc"].signers)
@@ -41,14 +41,14 @@ async function create(ctx) {
 }
 
 async function list(ctx) {
-    // await services.vaildateSignature(ctx)
+    await services.vaildateSignature(ctx)
     const address = ctx.request.headers['x-stellar-address']
     const records = await Records.find({ [`signers.${address}`]: { $exists: true } }).sort({ '_id': -1 })
     ctx.body = records
 }
 
 async function sign(ctx) {
-    // await services.vaildateSignature(ctx)
+    await services.vaildateSignature(ctx)
     const address = ctx.request.headers['x-stellar-address']
     const { hash, xdr } = ctx.request.body
     const record = await Records.findOne({ hash })
