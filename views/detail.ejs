@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>New Payment - multisig.tools</title>
+    <title>Detail - multisig.tools</title>
     <link href="https://cdn.bootcss.com/bulma/0.7.1/css/bulma.min.css" rel="stylesheet">
     <style>
         .paymant-form {
@@ -34,15 +34,14 @@
                     <div class="container">
                         <ul>
                             <li>
-                                <a>SIGNATURE LIST</a>
+                                <a href="/list">SIGNATURE LIST</a>
                             </li>
                             <li>
-                                <a>NEW PAYMENT</a>
+                                <a href="create">NEW PAYMENT</a>
                             </li>
                         </ul>
-                    </div>
                 </nav>
-            </div>
+                </div>
         </section>
         <form class="paymant-form">
             <div class="field">
@@ -105,7 +104,8 @@
             </div>
 
             <div class="field">
-                <label class="label">XDR(<a id="xdr-viewer">XDR Viewer</a>)</label>
+                <label class="label">XDR(
+                    <a id="xdr-viewer">XDR Viewer</a>)</label>
                 <div class="control">
                     <textarea id="xdr" class="textarea is-success" placeholder="Loading..." disabled></textarea>
                 </div>
@@ -124,156 +124,157 @@
             </div>
             <button id="sign" class="button is-primary is-fullwidth">Sign the payment</button>
         </form>
-    </div>
-    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://cdn.bootcss.com/socket.io/2.1.1/socket.io.js"></script>
-    <script>
-        $(function () {
-            (function loadFFW() {
-                let interval = setInterval(function () {
-                    if (window.FFW) {
-                        fetchData();
-                        websocketData();
-                        clearInterval(interval);
+        </div>
+        <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://cdn.bootcss.com/socket.io/2.1.1/socket.io.js"></script>
+        <script>
+            $(function () {
+                (function loadFFW() {
+                    let interval = setInterval(function () {
+                        if (window.FFW) {
+                            fetchData();
+                            websocketData();
+                            clearInterval(interval);
+                        }
+                    }, 100);
+                })();
+                function websocketData() {
+                    hash_tmp = window.location.href.split('/')
+                    hash = hash_tmp[hash_tmp.length - 1].slice(0, 64)
+                    var socket = io();
+                    socket.once('connect', function () {
+                        socket.emit('join', hash);
+                    })
+                    socket.on('message', function (res) {
+                        handleData(res)
+                    });
+                }
+                function handleData(res) {
+                    $("#hash").val(res.hash)
+                    $("#time").val(res.createdAt)
+                    $("#your-address").val(res.detail.sourcePublicKey)
+                    $("#source-account").val(res.detail.sourcePaymentPublicKey)
+                    $("#destination").val(res.detail.receiverPublicKey)
+                    let assetCode = res.detail.assetCode
+                    let assetIssuer = res.detail.assetIssuer
+                    if (assetCode == '') {
+                        assetCode = "XLM"
+                        assetIssuer = "stellar.org"
                     }
-                }, 100);
-            })();
-            function websocketData() {
-                hash_tmp = window.location.href.split('/')
-                hash = hash_tmp[hash_tmp.length - 1].slice(0, 64)
-                var socket = io();
-                socket.once('connect', function () {
-                    socket.emit('join', hash);
-                })
-                socket.on('message', function (res) {
-                    handleData(res)
-                });
-            }
-            function handleData(res) {
-                $("#hash").val(res.hash)
-                $("#time").val(res.createdAt)
-                $("#your-address").val(res.detail.sourcePublicKey)
-                $("#source-account").val(res.detail.sourcePaymentPublicKey)
-                $("#destination").val(res.detail.receiverPublicKey)
-                let assetCode = res.detail.assetCode
-                let assetIssuer = res.detail.assetIssuer
-                if (assetCode == '') {
-                    assetCode = "XLM"
-                    assetIssuer = "stellar.org"
-                }
-                $("#asset-code").val(assetCode)
-                $("#asset-issuer").val(assetIssuer)
-                $("#amount").val(res.detail.amount)
-                $("#message").val(res.detail.message)
-                const xdr = res.xdr
-                $("#xdr").val(xdr)
-                $("#xdr-viewer").prop("href", `https://www.stellar.org/laboratory/#xdr-viewer?input=${encodeURIComponent(xdr)}&type=TransactionEnvelope&network=public`)
-                const status_code = res.status
-                let status = ''
-                switch (status_code) {
-                    case 0:
-                        const medThreshold = res.medThreshold
-                        const sumWeight = res.sumWeight
-                        status = `Processing. Need ${medThreshold} weights, got ${sumWeight}.`
-                        break;
-                    case 1:
-                        status = 'Success'
-                        break;
-                    case 2:
-                        status = 'Failed'
-                        break;
-                }
-                $("#status").val(status)
-                if (status_code != 0) {
-                    $("#sign").hide()
-                }
-                if (res.signers[window.FFW.address].signed) {
-                    $('#sign').prop("disabled", true).html('Signed');
-                }
-
-            }
-            function fetchData() {
-                let data = {
-                    'x-stellar-timestamp': (new Date().getTime()).toString(),
-                    'x-stellar-address': window.FFW.address,
-                }
-                let signature_data = JSON.stringify(data, Object.keys(data).sort())
-                window.FFW.sign(signature_data, response => {
-                    if (response.code === 'fail') {
-                        alert('sign failed')
-                    } else {
-                        fetch("/api/detail/" + hash,
-                            {
-                                headers: {
-                                    ...data,
-                                    'x-stellar-signature': response.data
-                                },
-                                method: "GET",
-                            })
-                            .then(res => {
-                                return res.json()
-                            })
-                            .then(res => {
-                                if (res.hash) {
-                                    handleData(res)
-
-                                }
-                            })
-                            .catch(res => { alert(res) })
+                    $("#asset-code").val(assetCode)
+                    $("#asset-issuer").val(assetIssuer)
+                    $("#amount").val(res.detail.amount)
+                    let message = res.detail.message != "" ? res.detail.message : "None"
+                    $("#message").val(message)
+                    const xdr = res.xdr
+                    $("#xdr").val(xdr)
+                    $("#xdr-viewer").prop("href", `https://www.stellar.org/laboratory/#xdr-viewer?input=${encodeURIComponent(xdr)}&type=TransactionEnvelope&network=public`)
+                    const status_code = res.status
+                    let status = ''
+                    switch (status_code) {
+                        case 0:
+                            const medThreshold = res.medThreshold
+                            const sumWeight = res.sumWeight
+                            status = `Processing. Need ${medThreshold} weights, got ${sumWeight}.`
+                            break;
+                        case 1:
+                            status = 'Success'
+                            break;
+                        case 2:
+                            status = 'Failed'
+                            break;
                     }
-                })
-                $("#sign").click(function () {
-                    $("#sign").addClass('is-loading')
-                    window.FFW.signXDR($("#xdr").val(), "Sign XDR", function (response) {
+                    $("#status").val(status)
+                    if (status_code != 0) {
+                        $("#sign").hide()
+                    }
+                    if (res.signers[window.FFW.address].signed) {
+                        $('#sign').prop("disabled", true).html('Signed');
+                    }
+
+                }
+                function fetchData() {
+                    let data = {
+                        'x-stellar-timestamp': (new Date().getTime()).toString(),
+                        'x-stellar-address': window.FFW.address,
+                    }
+                    let signature_data = JSON.stringify(data, Object.keys(data).sort())
+                    window.FFW.sign(signature_data, response => {
                         if (response.code === 'fail') {
-                            alert('Sign failed!' + response.message)
+                            alert('sign failed')
                         } else {
-                            const newXdr = response.data
-                            const data = {
-                                xdr: newXdr,
-                                hash: $("#hash").val()
-                            }
-                            let signature_data = JSON.stringify(data, Object.keys(data).sort())
-                            window.FFW.sign(signature_data, response => {
-                                if (response.code === 'fail') {
-                                    alert('sign failed')
-                                } else {
-                                    fetch("/api/sign",
-                                        {
-                                            headers: {
-                                                'Accept': 'application/json',
-                                                'Content-Type': 'application/json',
-                                                'x-stellar-timestamp': (new Date().getTime()).toString(),
-                                                'x-stellar-address': window.FFW.address,
-                                                'x-stellar-signature': response.data
-                                            },
-                                            method: "POST",
-                                            body: JSON.stringify(data)
-                                        })
-                                        .then(res => { return res.json() })
-                                        .then(res => {
-                                            if (res.hash) {
-                                                $("#sign").removeClass('is-loading')
-                                                $('#sign').prop("disabled", true).html('Signed');
-                                            } else {
-                                                alert(res.message)
-                                            }
-                                        })
-                                        .catch(res => { alert(res) })
-                                }
-                            }
+                            fetch("/api/detail/" + hash,
+                                {
+                                    headers: {
+                                        ...data,
+                                        'x-stellar-signature': response.data
+                                    },
+                                    method: "GET",
+                                })
+                                .then(res => {
+                                    return res.json()
+                                })
+                                .then(res => {
+                                    if (res.hash) {
+                                        handleData(res)
 
-                            )
+                                    }
+                                })
+                                .catch(res => { alert(res) })
                         }
                     })
+                    $("#sign").click(function () {
+                        $("#sign").addClass('is-loading')
+                        window.FFW.signXDR($("#xdr").val(), "Sign XDR", function (response) {
+                            if (response.code === 'fail') {
+                                alert('Sign failed!' + response.message)
+                            } else {
+                                const newXdr = response.data
+                                const data = {
+                                    xdr: newXdr,
+                                    hash: $("#hash").val()
+                                }
+                                let signature_data = JSON.stringify(data, Object.keys(data).sort())
+                                window.FFW.sign(signature_data, response => {
+                                    if (response.code === 'fail') {
+                                        alert('sign failed')
+                                    } else {
+                                        fetch("/api/sign",
+                                            {
+                                                headers: {
+                                                    'Accept': 'application/json',
+                                                    'Content-Type': 'application/json',
+                                                    'x-stellar-timestamp': (new Date().getTime()).toString(),
+                                                    'x-stellar-address': window.FFW.address,
+                                                    'x-stellar-signature': response.data
+                                                },
+                                                method: "POST",
+                                                body: JSON.stringify(data)
+                                            })
+                                            .then(res => { return res.json() })
+                                            .then(res => {
+                                                if (res.hash) {
+                                                    $("#sign").removeClass('is-loading')
+                                                    $('#sign').prop("disabled", true).html('Signed');
+                                                } else {
+                                                    alert(res.message)
+                                                }
+                                            })
+                                            .catch(res => { alert(res) })
+                                    }
+                                }
 
-                    return false
-                })
+                                )
+                            }
+                        })
 
-            }
+                        return false
+                    })
 
-        })
-    </script>
+                }
+
+            })
+        </script>
 </body>
 
 </html>

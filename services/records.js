@@ -6,7 +6,6 @@ const serverURL = 'https://horizon-testnet.stellar.org'
 stellarSdk.Network.useTestNetwork();
 const server = new stellarSdk.Server(serverURL);
 
-// TODO: middleware
 async function vaildateSignature(ctx) {
     let { 'x-stellar-address': address, 'x-stellar-signature': signature, 'x-stellar-timestamp': timestamp } = ctx.request.headers
 
@@ -77,16 +76,17 @@ async function generateXdr(sourcePublicKey, sourcePaymentPublicKey, receiverPubl
 }
 
 async function equalHash(xdr, hash) {
+    // TODO: signature number count
     let transactionEnvelope = stellarSdk.xdr.TransactionEnvelope.fromXDR(xdr, 'base64')
     let transaction = new stellarSdk.Transaction(transactionEnvelope)
     return transaction.hash().toString('hex') == hash
 }
 
-async function submitXdr(tx) {
-    return axios.post(
-        serverURL + '/transactions',
-        `tx=${tx}`
-    )
+async function submitXdr(xdr) {
+  const transactionEnvelope = stellarSdk.xdr.TransactionEnvelope.fromXDR(xdr, 'base64')
+  const transaction = new stellarSdk.Transaction(transactionEnvelope)
+  return await server.submitTransaction(transaction)
+
 }
 
 async function sumWeight(signers) {

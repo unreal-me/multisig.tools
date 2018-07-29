@@ -82,7 +82,6 @@ async function sign(ctx) {
         }
         record.save()
     }
-    // await socket.sendMessageByHash(hash)
     console.log(record)
     ctx.body = record
     await socket.sendMessageByHash(hash, {

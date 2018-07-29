@@ -8,7 +8,8 @@ function socketInit(app) {
         console.log('a user connected');
 
         socket.on('join', data => {
-            console.log(data)
+            // console.log(data)
+            // TODO: need auth???
             socket.join(data, function () {
                 console.log(socket.rooms);
             });
@@ -18,7 +19,6 @@ function socketInit(app) {
             console.log('user disconnected');
         });
     });
-
     return server;
 }
 

@@ -4,7 +4,6 @@ const Router = require('koa-router')
 const views = require('koa-views')
 const Logger = require('koa-logger')
 const socketInit = require('./utils/socket').socketInit
-const static = require('koa-static')
 
 
 const path = require('path')
@@ -16,18 +15,17 @@ const router = new Router()
 const server = socketInit(app);
 
 
-app.use((ctx, next) => {
-    return next().catch(err => {
-        ctx.status = err.status || 500
-        ctx.body = err
-    })
-})
+// app.use((ctx, next) => {
+//     return next().catch(err => {
+//         ctx.status = err.status || 500
+//         ctx.body = err
+//     })
+// })
 
 if (process.env.NODE_ENV === 'development') {
     app.use(Logger())
 }
 
-app.use(static(path.join( __dirname,  'static')))
 
 app.use(views(path.join(__dirname, 'views'), {
     extension: 'ejs'

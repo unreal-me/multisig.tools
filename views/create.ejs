@@ -54,7 +54,7 @@
             <div class="field">
                 <label class="label">Source account</label>
                 <div class="control">
-                    <input id="source-account" class="input is-success" type="text" value="GCBGRA6HGBLNWFY5WCDRIMAUM5V5GVUJZLTF6ZYKF2VOFLCGOSCMSMH5"
+                    <input id="source-account" class="input is-success" type="text"
                         placeholder="GAS2D25QE5XANGBTG6ENN6MM2GO572A6S5SHRNFLF4TNBP5TDVJZKOES" required>
                 </div>
                 <p class="help is-success">The source account for the payment.</p>
@@ -63,7 +63,7 @@
             <div class="field">
                 <label class="label">Destination</label>
                 <div class="control">
-                    <input id="destination" class="input is-success" type="text" value="GCTIWTV55JSVDMYPIEJA6CQVG6Y5XCSWI3H4LQKOD3OU2775X6LMFTLO"
+                    <input id="destination" class="input is-success" type="text"
                         placeholder="GBXI6WDVX5O5765FG3FLWVQCWXTPYCN775WMDIRJA4ESQPUSTAN6X5SJ" required>
                 </div>
                 <p class="help is-success">The destination account ID.</p>
@@ -141,7 +141,7 @@
                         if (response.code === 'fail') {
                             alert('sign failed')
                         } else {
-                            fetch("/api/sign",
+                            fetch("/api/create",
                                 {
                                     headers: {
                                         'Accept': 'application/json',
@@ -156,7 +156,8 @@
                                 .then(res => { return res.json() })
                                 .then(res => {
                                     if (res.hash) {
-                                        alert(res.hash)
+                                        // alert(res.hash)
+                                        window.location = '/detail/' + res.hash;
                                     } else {
                                         alert(res.message)
                                     }
